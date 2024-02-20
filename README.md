@@ -83,8 +83,8 @@ Each cell interacts with its eight neighbors (horizontal, vertical, diagonal) us
 
 ```
 Before          After
-. . .           . O .
-O O .    =>     O O .
+. O .           . O .
+O . O    =>     O O O
 . . .           . . .
 ```
 
