@@ -4,15 +4,15 @@
 CC = gcc
 
 # Compiler Flags
-CFLAGS = -Wall -Wextra -std=c11 `sdl2-config --cflags`
+CFLAGS = -Wall -Wextra -std=c11 -I/opt/homebrew/include/SDL2 -D_THREAD_SAFE
 
 # Linker Flags
-LDFLAGS = `sdl2-config --libs`
+LDFLAGS = -L/opt/homebrew/lib -lSDL2
 
-# Source Files
-SRC = main.c
+# Find all .c files in the directory
+SRC = $(wildcard *.c)
 
-# Object Files
+# Replace the .c extension with .o for all source files
 OBJ = $(SRC:.c=.o)
 
 # Executable Name
@@ -22,7 +22,7 @@ EXEC = GameOfLife
 all: $(EXEC)
 
 $(EXEC): $(OBJ)
-	$(CC) $(OBJ) -o $(EXEC) $(LDFLAGS)
+	$(CC) $(OBJ) -o $@ $(LDFLAGS)
 
 # To obtain object files
 %.o: %.c

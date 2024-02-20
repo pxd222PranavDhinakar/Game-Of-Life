@@ -1,6 +1,11 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include "gliderGun.h"
+#include "config.h"
+#include "drawing.h"
+
 
 // Define the window dimensions
 #define WINDOW_WIDTH 800
@@ -8,6 +13,16 @@
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
+
+
+// Define the size of the grid
+const int GRID_WIDTH = 80;
+const int GRID_HEIGHT = 60;
+//const int GRID_WIDTH = 160;
+//const int GRID_HEIGHT = 120;
+
+int grid[GRID_HEIGHT][GRID_WIDTH];
+int nextGrid[GRID_HEIGHT][GRID_WIDTH];
 
 
 // Initialize SDL and create a window and renderer
@@ -38,62 +53,62 @@ void closeSDL() {
 }
 
 
-//#define GRID_WIDTH 800
-//#define GRID_HEIGHT 600
-
-#define GRID_WIDTH 80
-#define GRID_HEIGHT 60
-
-int grid[GRID_HEIGHT][GRID_WIDTH];
-int nextGrid[GRID_HEIGHT][GRID_WIDTH];
-
-// Randomly populate the grid with dead and alive cells
-/*
+// Function to initialize the grid with a glider gun
 void initializeGrid() {
-    for (int i = 0; i < GRID_HEIGHT; i++) {
-        for (int j = 0; j < GRID_WIDTH; j++) {
-            // Randomly set a grid state to 0 or 1
-            grid[i][j] = rand() % 2; // Randomly initialize the grid
+    // Clear the grid
+    memset(grid, 0, sizeof(grid));
+
+    //GliderGun gun = {.origin = {18, 4}};
+    //placeGliderGun(&gun, grid); // `grid` decays to a pointer to its first element
+
+    //GliderGun gun = {.origin = {(GRID_WIDTH / 2), (GRID_HEIGHT / 2)}};
+    //GliderGun gun2 = {.origin = {60, 4}};
+    //placeGliderGun(&gun2, grid); // `grid` decays to a pointer to its first element
+    
+
+    Drawing myDrawing;
+    initDrawing(&myDrawing, 5, 5); // Initialize a 5x5 drawing
+    // Set some cells in the drawing
+    // Set them in the pattern of a glider
+    setCell(&myDrawing, 1, 2, 1);
+    setCell(&myDrawing, 2, 3, 1);
+    setCell(&myDrawing, 3, 1, 1);
+    setCell(&myDrawing, 3, 2, 1);
+    setCell(&myDrawing, 3, 3, 1);
+
+
+    
+    // Place the drawing on the main grid
+    Point topLeft = {10, 10}; // Position to place the drawing on the main grid
+    placeDrawing(&myDrawing, topLeft, grid); // `grid` decays to a pointer to its first element
+
+}
+
+
+// Fixed boundary conditions
+/*
+int getAliveNeighbors(int x, int y) {
+    int aliveNeighbors = 0;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            if (i == 0 && j == 0) continue; // Skip the cell itself
+            int nx = x + i;
+            int ny = y + j;
+            
+            // Check if the neighbor is within the grid bounds
+            if (nx >= 0 && nx < GRID_WIDTH && ny >= 0 && ny < GRID_HEIGHT) {
+                aliveNeighbors += grid[ny][nx];
+            }
+            // Cells outside the bounds are considered dead (no addition to aliveNeighbors)
         }
     }
+    return aliveNeighbors;
 }
 */
 
-void initializeGrid() {
-    // Ensure the rest of the grid is cleared
-    memset(grid, 0, sizeof(grid));
-
-    // Set up a glider in the top-left corner
-    //grid[1][2] = 1;
-    //grid[2][3] = 1;
-    //grid[3][1] = 1;
-    //grid[3][2] = 1;
-    //grid[3][3] = 1;
-
-    for (int i = 0; i < GRID_HEIGHT - 2; i++) { // Ensure room for glider height
-        for (int j = 0; j < GRID_WIDTH - 2; j++) { // Ensure room for glider width
-            // Randomly set up a glider in the grid with a 1/10 chance
-            if (rand() % 100 == 0) {
-                // Clear the area for the glider to prevent overlapping patterns
-                for (int gi = 0; gi < 3; gi++) {
-                    for (int gj = 0; gj < 3; gj++) {
-                        grid[i + gi][j + gj] = 0; // Clear the cell
-                    }
-                }
-                // Place a glider
-                grid[i][j + 1] = 1; // Second cell in the first row
-                grid[i + 1][j + 2] = 1; // Third cell in the second row
-                grid[i + 2][j] = 1; // First cell in the third row
-                grid[i + 2][j + 1] = 1; // Second cell in the third row
-                grid[i + 2][j + 2] = 1; // Third cell in the third row
-            }
-        }
-    }
-
-}
-
-
 // Periodic boundary conditions
+// The grid wraps around, creating a torus shape. This means the right edge connects to the left, and the top edge connects to the bottom, creating a continuous space without borders.
+
 int getAliveNeighbors(int x, int y) {
     int aliveNeighbors = 0;
     for (int i = -1; i <= 1; i++) {
@@ -108,6 +123,27 @@ int getAliveNeighbors(int x, int y) {
 }
 
 
+// Reflecting boundary conditions
+// The edges reflect back into the grid, simulating a mirror at each edge. This means a cell at the edge has neighbors that include cells on the opposite side of the edge, as if the pattern were reflected back into the space.
+/*
+int getAliveNeighbors(int x, int y) {
+    int aliveNeighbors = 0;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            if (i == 0 && j == 0) continue; // Skip the cell itself
+            int nx = x + i;
+            int ny = y + j;
+            // Reflect at edges
+            if (nx < 0) nx = -nx;
+            else if (nx >= GRID_WIDTH) nx = 2*GRID_WIDTH - nx - 1;
+            if (ny < 0) ny = -ny;
+            else if (ny >= GRID_HEIGHT) ny = 2*GRID_HEIGHT - ny - 1;
+            aliveNeighbors += grid[ny][nx];
+        }
+    }
+    return aliveNeighbors;
+}
+*/
 
 
 void updateGame() {
@@ -134,19 +170,40 @@ void updateGame() {
 
 
 void renderGame() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black background
+    // Set the background color to dark gray
+    SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Darker gray
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for cells
+    // Calculate the cell size
+    int cellWidth = WINDOW_WIDTH / GRID_WIDTH;
+    int cellHeight = WINDOW_HEIGHT / GRID_HEIGHT;
+
+    // Determine if grid lines should be drawn based on cell size
+    bool drawGridLines = cellWidth > 4 && cellHeight > 4; // Example threshold, adjust as needed
+
+    // Optionally draw the grid lines
+    if (drawGridLines) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for grid lines
+        for (int i = 0; i <= GRID_HEIGHT; i++) {
+            SDL_RenderDrawLine(renderer, 0, i * cellHeight, WINDOW_WIDTH, i * cellHeight);
+        }
+        for (int j = 0; j <= GRID_WIDTH; j++) {
+            SDL_RenderDrawLine(renderer, j * cellWidth, 0, j * cellWidth, WINDOW_HEIGHT);
+        }
+    }
+
+    // Draw the cells
     for (int i = 0; i < GRID_HEIGHT; i++) {
         for (int j = 0; j < GRID_WIDTH; j++) {
             if (grid[i][j] == 1) {
                 SDL_Rect cell;
-                cell.x = j * (WINDOW_WIDTH / GRID_WIDTH);
-                cell.y = i * (WINDOW_HEIGHT / GRID_HEIGHT);
-                cell.w = WINDOW_WIDTH / GRID_WIDTH;
-                cell.h = WINDOW_HEIGHT / GRID_HEIGHT;
-
+                // Adjust cell dimensions slightly if grid lines are not being drawn
+                cell.x = j * cellWidth + (drawGridLines ? 1 : 0);
+                cell.y = i * cellHeight + (drawGridLines ? 1 : 0);
+                cell.w = cellWidth - (drawGridLines ? 1 : 0);
+                cell.h = cellHeight - (drawGridLines ? 1 : 0);
+                //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for cells
+                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color for live cells
                 SDL_RenderFillRect(renderer, &cell);
             }
         }
@@ -157,78 +214,61 @@ void renderGame() {
 
 
 
-// Fixed boundary conditions
+
+
+
+
+
+
 /*
-int getAliveNeighbors(int x, int y) {
-    int aliveNeighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue; // Skip the cell itself
-            int nx = x + i;
-            int ny = y + j;
-            if (nx >= 0 && nx < GRID_WIDTH && ny >= 0 && ny < GRID_HEIGHT) {
-                aliveNeighbors += grid[ny][nx];
+// Version that relies on user input to advance the game
+int main() {
+    initSDL();
+    initializeGrid();
+
+    int quit = 0; // Main loop flag
+    int stepCount = 0; // Step counter
+
+    SDL_Event e;
+
+    // While application is running
+    while (!quit) {
+        bool step = false; // Flag to control when to update the game state
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                quit = 1;
+            } else if (e.type == SDL_KEYDOWN) { // Check if a key was pressed
+                step = true; // Set the flag to true to update the game in this loop iteration
             }
         }
-    }
-    return aliveNeighbors;
-}
-*/
 
-// Periodic boundary conditions
-// The grid wraps around, creating a torus shape. This means the right edge connects to the left, and the top edge connects to the bottom, creating a continuous space without borders.
-/*
-int getAliveNeighbors(int x, int y) {
-    int aliveNeighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue; // Skip the cell itself
-            int nx = (x + i + GRID_WIDTH) % GRID_WIDTH;
-            int ny = (y + j + GRID_HEIGHT) % GRID_HEIGHT;
-            aliveNeighbors += grid[ny][nx];
+        if (step) {
+            if (stepCount >= 2) { // Apply rules only after 2 steps
+                updateGame(); // Update the game based on the rules
+            }
+            renderGame(); // Render the game regardless
+            printf("Iteration: %d\n", stepCount);
+            stepCount++; // Increment the step counter
         }
+
+        SDL_Delay(100); // Delay to slow down the simulation
     }
-    return aliveNeighbors;
+
+    closeSDL();
+    return 0;
 }
 */
-// Reflecting boundary conditions
-// The edges reflect back into the grid, simulating a mirror at each edge. This means a cell at the edge has neighbors that include cells on the opposite side of the edge, as if the pattern were reflected back into the space.
-/*
-int getAliveNeighbors(int x, int y) {
-    int aliveNeighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue; // Skip the cell itself
-            int nx = x + i;
-            int ny = y + j;
-            // Reflect at edges
-            if (nx < 0) nx = -nx;
-            else if (nx >= GRID_WIDTH) nx = 2*GRID_WIDTH - nx - 1;
-            if (ny < 0) ny = -ny;
-            else if (ny >= GRID_HEIGHT) ny = 2*GRID_HEIGHT - ny - 1;
-            aliveNeighbors += grid[ny][nx];
-        }
-    }
-    return aliveNeighbors;
-}
-*/
-
-
-
 
 
 
 int main() {
-    //(void)argc; // Suppress unused parameter warning
-    //(void)args; // Suppress unused parameter warning
-
     initSDL();
     initializeGrid();
 
-    // Main loop flag
-    int quit = 0;
+    int quit = 0; // Main loop flag
+    int stepCount = 0; // Step counter
 
-    // Event handler
+
     SDL_Event e;
 
     // While application is running
@@ -239,12 +279,40 @@ int main() {
             }
         }
 
-        updateGame();
-        renderGame();
+        updateGame(); // Update the game based on the rules
+        renderGame(); // Render the game regardless
+        printf("Iteration: %d\n", stepCount);
+        stepCount++; // Increment the step counter
 
-        SDL_Delay(100); // Delay to slow down the simulation
+        SDL_Delay(10); // Delay to control the speed of the simulation
     }
 
     closeSDL();
     return 0;
 }
+
+
+/*
+int main() {
+    Drawing myDrawing;
+    initDrawing(&myDrawing, 10, 5); // Initialize a drawing of 10x5
+
+    // Set a few cells to demonstrate setting values
+    setCell(&myDrawing, 1, 1, 1);
+    setCell(&myDrawing, 2, 2, 1);
+    setCell(&myDrawing, 3, 3, 1);
+
+    // Example: Print the drawing to console
+    for (int y = 0; y < myDrawing.height; ++y) {
+        for (int x = 0; x < myDrawing.width; ++x) {
+            printf("%d ", myDrawing.grid[y][x]);
+        }
+        printf("\n");
+    }
+
+    return 0;
+}
+*/
+
+
+
