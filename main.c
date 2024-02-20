@@ -5,7 +5,7 @@
 #include "gliderGun.h"
 #include "config.h"
 #include "drawing.h"
-
+#include "SimulationHistory.h"
 
 // Define the window dimensions
 #define WINDOW_WIDTH 800
@@ -24,7 +24,11 @@ const int GRID_HEIGHT = 60;
 int grid[GRID_HEIGHT][GRID_WIDTH];
 int nextGrid[GRID_HEIGHT][GRID_WIDTH];
 
+// Global SimulationHistory Instance
+SimulationHistory history;
 
+
+/*
 // Initialize SDL and create a window and renderer
 void initSDL() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -44,13 +48,18 @@ void initSDL() {
         }
     }
 }
+*/
 
 
 void closeSDL() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    // Free SimulationHistory
+    freeSimulationHistory(&history);
 }
+
+
 
 
 // Function to initialize the grid with a glider gun
@@ -58,30 +67,52 @@ void initializeGrid() {
     // Clear the grid
     memset(grid, 0, sizeof(grid));
 
-    //GliderGun gun = {.origin = {18, 4}};
-    //placeGliderGun(&gun, grid); // `grid` decays to a pointer to its first element
+    GliderGun gun = {.origin = {18, 4}};
+    placeGliderGun(&gun, grid); // `grid` decays to a pointer to its first element
 
     //GliderGun gun = {.origin = {(GRID_WIDTH / 2), (GRID_HEIGHT / 2)}};
-    //GliderGun gun2 = {.origin = {60, 4}};
-    //placeGliderGun(&gun2, grid); // `grid` decays to a pointer to its first element
+    GliderGun gun2 = {.origin = {60, 4}};
+    placeGliderGun(&gun2, grid); // `grid` decays to a pointer to its first element
     
 
-    Drawing myDrawing;
-    initDrawing(&myDrawing, 5, 5); // Initialize a 5x5 drawing
+    //Drawing myDrawing;
+    //initDrawing(&myDrawing, 5, 5); // Initialize a 5x5 drawing
     // Set some cells in the drawing
     // Set them in the pattern of a glider
-    setCell(&myDrawing, 1, 2, 1);
-    setCell(&myDrawing, 2, 3, 1);
-    setCell(&myDrawing, 3, 1, 1);
-    setCell(&myDrawing, 3, 2, 1);
-    setCell(&myDrawing, 3, 3, 1);
+    //setCell(&myDrawing, 1, 2, 1);
+    //setCell(&myDrawing, 2, 3, 1);
+    //setCell(&myDrawing, 3, 1, 1);
+    //setCell(&myDrawing, 3, 2, 1);
+    //setCell(&myDrawing, 3, 3, 1);
 
 
     
     // Place the drawing on the main grid
-    Point topLeft = {10, 10}; // Position to place the drawing on the main grid
-    placeDrawing(&myDrawing, topLeft, grid); // `grid` decays to a pointer to its first element
+    //Point topLeft = {10, 10}; // Position to place the drawing on the main grid
+    //placeDrawing(&myDrawing, topLeft, grid); // `grid` decays to a pointer to its first element
 
+}
+
+
+void initGame() {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        exit(1);
+    } else {
+        window = SDL_CreateWindow("Game of Life", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+        if (!window) {
+            printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+            exit(1);
+        }
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        if (!renderer) {
+            printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
+            exit(1);
+        }
+    }
+    initializeGrid();
+    // Initialize SimulationHistory
+    initSimulationHistory(&history);
 }
 
 
@@ -151,6 +182,31 @@ void updateGame() {
     for (int y = 0; y < GRID_HEIGHT; y++) {
         for (int x = 0; x < GRID_WIDTH; x++) {
             // Periodic boundary conditions
+            int aliveNeighbors = getAliveNeighbors(x, y);
+            // Apply the rules of Game of Life
+            if (aliveNeighbors == 3 || (aliveNeighbors == 2 && grid[y][x])) {
+                nextGrid[y][x] = 1;
+            } else {
+                nextGrid[y][x] = 0;
+            }
+        }
+    }
+
+    // Copy nextGrid to grid
+    for (int y = 0; y < GRID_HEIGHT; y++) {
+        for (int x = 0; x < GRID_WIDTH; x++) {
+            grid[y][x] = nextGrid[y][x];
+        }
+    }
+}
+
+
+/*
+void updateGame() {
+    // Calculate next state of the grid
+    for (int y = 0; y < GRID_HEIGHT; y++) {
+        for (int x = 0; x < GRID_WIDTH; x++) {
+            // Periodic boundary conditions
             int aliveNeighbors = getAliveNeighbors(x, y); 
             // Apply the rules of Game of Life
             if (aliveNeighbors == 3 || (aliveNeighbors == 2 && grid[y][x])) {
@@ -167,6 +223,7 @@ void updateGame() {
         }
     }
 }
+*/
 
 
 void renderGame() {
@@ -219,48 +276,64 @@ void renderGame() {
 
 
 
-
-/*
-// Version that relies on user input to advance the game
+// Main function
 int main() {
-    initSDL();
-    initializeGrid();
+    initGame();
 
-    int quit = 0; // Main loop flag
-    int stepCount = 0; // Step counter
+    int quit = 0;
+    int stepCount = 0;
+    bool running = false;
 
     SDL_Event e;
 
-    // While application is running
     while (!quit) {
-        bool step = false; // Flag to control when to update the game state
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 quit = 1;
-            } else if (e.type == SDL_KEYDOWN) { // Check if a key was pressed
-                step = true; // Set the flag to true to update the game in this loop iteration
+            } else if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym == SDLK_SPACE) {
+                    running = !running;
+                }
+                if (e.key.keysym.sym == SDLK_RIGHT && !running) {
+                    if(stepForwardInHistory(&history, grid) == 0) {
+                        // If there are no more states to step forward to create a new state
+                        updateGame();
+                        renderGame();
+                        saveStateToHistory(&history, grid);
+                        stepCount++;
+                        printf("Iteration: %d\n", stepCount);
+                    }
+                    else {
+                        renderGame();
+                    }
+                }
+                if (e.key.keysym.sym == SDLK_LEFT && !running) {
+                    stepBackwardInHistory(&history, grid);
+                    renderGame();
+                }
             }
         }
 
-        if (step) {
-            if (stepCount >= 2) { // Apply rules only after 2 steps
-                updateGame(); // Update the game based on the rules
-            }
-            renderGame(); // Render the game regardless
+        if (running) {
+            updateGame();
+            renderGame();
+            saveStateToHistory(&history, grid);
+            stepCount++;
             printf("Iteration: %d\n", stepCount);
-            stepCount++; // Increment the step counter
+            SDL_Delay(10);
         }
-
-        SDL_Delay(100); // Delay to slow down the simulation
     }
 
     closeSDL();
     return 0;
 }
-*/
 
 
 
+
+
+
+/*
 int main() {
     initSDL();
     initializeGrid();
@@ -290,6 +363,7 @@ int main() {
     closeSDL();
     return 0;
 }
+*/
 
 
 /*
