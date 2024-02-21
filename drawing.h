@@ -3,8 +3,8 @@
 #ifndef DRAWING_H
 #define DRAWING_H
 
-#define MAX_DRAWING_WIDTH 50
-#define MAX_DRAWING_HEIGHT 50
+#define MAX_DRAWING_WIDTH 1000
+#define MAX_DRAWING_HEIGHT 1000
 
 #include "types.h"   // For Point, if used
 #include "config.h"  // For GRID_WIDTH and GRID_HEIGHT

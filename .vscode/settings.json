@@ -2,6 +2,7 @@
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
         "drawing.h": "c",
-        "config.h": "c"
+        "config.h": "c",
+        "simulationhistory.h": "c"
     }
 }
