@@ -3,8 +3,8 @@
 #ifndef DRAWING_H
 #define DRAWING_H
 
-#define MAX_DRAWING_WIDTH 20
-#define MAX_DRAWING_HEIGHT 20
+#define MAX_DRAWING_WIDTH 50
+#define MAX_DRAWING_HEIGHT 50
 
 #include "types.h"   // For Point, if used
 #include "config.h"  // For GRID_WIDTH and GRID_HEIGHT
@@ -22,5 +22,7 @@ void initDrawing(Drawing *d, int width, int height);
 void setCell(Drawing *d, int x, int y, int value);
 void clearDrawing(Drawing *d);
 void placeDrawing(const Drawing *drawing, Point topLeft, int (*mainGrid)[GRID_WIDTH]);
+Drawing* loadDrawingFromFile(const char* filename);
+
 
 #endif // DRAWING_H

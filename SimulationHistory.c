@@ -80,6 +80,10 @@ int stepForwardInHistory(SimulationHistory* history, int grid[GRID_HEIGHT][GRID_
         }
         return 1;
     }
+    else if (history->totalStates > 0 && ((history->currentIndex + 1) % HISTORY_SIZE) >= history->totalStates) {
+        //printf("I DONT JUMP \n"); // FIX LATER
+        return 0;
+    }
     else {
         return 0;
     }

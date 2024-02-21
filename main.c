@@ -16,8 +16,8 @@ SDL_Renderer* renderer = NULL;
 
 
 // Define the size of the grid
-const int GRID_WIDTH = 80;
-const int GRID_HEIGHT = 60;
+const int GRID_WIDTH = 40;
+const int GRID_HEIGHT = 30;
 //const int GRID_WIDTH = 160;
 //const int GRID_HEIGHT = 120;
 
@@ -67,12 +67,22 @@ void initializeGrid() {
     // Clear the grid
     memset(grid, 0, sizeof(grid));
 
-    GliderGun gun = {.origin = {18, 4}};
-    placeGliderGun(&gun, grid); // `grid` decays to a pointer to its first element
+    Drawing* drawing = loadDrawingFromFile("glider_gun.txt");
+    if (drawing != NULL) {
+        // Use the drawing...
+        placeDrawing(drawing, (Point){0, 0}, grid); // Example usage
+
+        // When done with the drawing
+        free(drawing);
+    }
+
+
+    //GliderGun gun = {.origin = {18, 4}};
+    //placeGliderGun(&gun, grid); // `grid` decays to a pointer to its first element
 
     //GliderGun gun = {.origin = {(GRID_WIDTH / 2), (GRID_HEIGHT / 2)}};
-    GliderGun gun2 = {.origin = {60, 4}};
-    placeGliderGun(&gun2, grid); // `grid` decays to a pointer to its first element
+    //GliderGun gun2 = {.origin = {60, 4}};
+    //placeGliderGun(&gun2, grid); // `grid` decays to a pointer to its first element
     
 
     //Drawing myDrawing;
@@ -90,6 +100,29 @@ void initializeGrid() {
     // Place the drawing on the main grid
     //Point topLeft = {10, 10}; // Position to place the drawing on the main grid
     //placeDrawing(&myDrawing, topLeft, grid); // `grid` decays to a pointer to its first element
+
+
+    //Drawing eater;
+    //initDrawing(&eater, 4, 4); // Initialize a 5x5 drawing
+
+    // Set some cells in the drawing
+    // Set them in the pattern of an eater
+    // Initialize the top left corner
+    //setCell(&eater, 1, 1, 1);
+    // Initialize the cell to the right of the top left corner
+    //setCell(&eater, 1, 2, 1);
+    // Initialize the cell to the bottom of the cell of the top left corner
+    //setCell(&eater, 2, 1, 1);
+    
+    //setCell(&eater, 2, 3, 1);
+    //setCell(&eater, 3, 3, 1);
+    //setCell(&eater, 4, 3, 1);
+    //setCell(&eater, 4, 4, 1);
+
+    // Place the drawing on the main grid
+    //Point topLeft = {50, 40}; // Position to place the drawing on the main grid
+    //placeDrawing(&eater, topLeft, grid); // `grid` decays to a pointer to its first element
+
 
 }
 
@@ -117,7 +150,6 @@ void initGame() {
 
 
 // Fixed boundary conditions
-/*
 int getAliveNeighbors(int x, int y) {
     int aliveNeighbors = 0;
     for (int i = -1; i <= 1; i++) {
@@ -135,11 +167,11 @@ int getAliveNeighbors(int x, int y) {
     }
     return aliveNeighbors;
 }
-*/
 
+
+/*
 // Periodic boundary conditions
 // The grid wraps around, creating a torus shape. This means the right edge connects to the left, and the top edge connects to the bottom, creating a continuous space without borders.
-
 int getAliveNeighbors(int x, int y) {
     int aliveNeighbors = 0;
     for (int i = -1; i <= 1; i++) {
@@ -152,6 +184,7 @@ int getAliveNeighbors(int x, int y) {
     }
     return aliveNeighbors;
 }
+*/
 
 
 // Reflecting boundary conditions
@@ -225,7 +258,7 @@ void updateGame() {
 }
 */
 
-
+/*
 void renderGame() {
     // Set the background color to dark gray
     SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Darker gray
@@ -268,6 +301,173 @@ void renderGame() {
 
     SDL_RenderPresent(renderer);
 }
+*/
+
+void renderGame() {
+    // Set the background color to dark gray
+    SDL_SetRenderDrawColor(renderer, 64, 64, 64, 255); // Darker gray
+    SDL_RenderClear(renderer);
+
+    // Calculate the cell size
+    int cellWidth = WINDOW_WIDTH / GRID_WIDTH;
+    int cellHeight = WINDOW_HEIGHT / GRID_HEIGHT;
+
+    // Always draw the grid lines
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for grid lines
+    for (int i = 0; i <= GRID_HEIGHT; i++) {
+        SDL_RenderDrawLine(renderer, 0, i * cellHeight, WINDOW_WIDTH, i * cellHeight);
+    }
+    for (int j = 0; j <= GRID_WIDTH; j++) {
+        SDL_RenderDrawLine(renderer, j * cellWidth, 0, j * cellWidth, WINDOW_HEIGHT);
+    }
+
+    // Optionally draw the cells (if any are alive)
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color for live cells
+    for (int i = 0; i < GRID_HEIGHT; i++) {
+        for (int j = 0; j < GRID_WIDTH; j++) {
+            if (grid[i][j] == 1) {
+                SDL_Rect cell;
+                cell.x = j * cellWidth;
+                cell.y = i * cellHeight;
+                cell.w = cellWidth;
+                cell.h = cellHeight;
+                SDL_RenderFillRect(renderer, &cell);
+            }
+        }
+    }
+
+    SDL_RenderPresent(renderer);
+}
+
+
+
+
+
+
+/*
+void drawMode(int (*grid)[GRID_WIDTH]) {
+    bool drawing = true;
+    SDL_Event e;
+
+    while (drawing) {
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                drawing = false;
+                break; // Exit drawing mode if window is closed
+            }
+            else if (e.type == SDL_MOUSEBUTTONDOWN) {
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+
+                // Calculate grid coordinates
+                int gridX = x / (WINDOW_WIDTH / GRID_WIDTH);
+                int gridY = y / (WINDOW_HEIGHT / GRID_HEIGHT);
+
+                // Toggle cell state
+                grid[gridY][gridX] = !grid[gridY][gridX];
+
+                // Render grid with updated state
+                renderGame();
+            }
+            // When the enter key is pressed, exit drawing mode
+            else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+                // Press Enter to exit drawing mode
+                drawing = false;
+            }
+        }
+    }
+}
+*/
+
+
+
+
+void saveCurrentDrawingToFile(const int (*grid)[GRID_WIDTH], int width, int height, const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Failed to open file %s for writing.\n", filename);
+        return;
+    }
+
+    // Write the dimensions
+    fprintf(file, "%d %d\n", width, height);
+
+    // Write the grid state
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            fprintf(file, "%d ", grid[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+    printf("Drawing saved to %s\n", filename);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void toggleCellState(int mouseX, int mouseY, int (*grid)[GRID_WIDTH]) {
+    int cellWidth = WINDOW_WIDTH / GRID_WIDTH;
+    int cellHeight = WINDOW_HEIGHT / GRID_HEIGHT;
+
+    int gridX = mouseX / cellWidth;
+    int gridY = mouseY / cellHeight;
+
+    // Toggle cell state, ensuring we're within grid bounds
+    if (gridX >= 0 && gridX < GRID_WIDTH && gridY >= 0 && gridY < GRID_HEIGHT) {
+        grid[gridY][gridX] = !grid[gridY][gridX];
+    }
+}
+
+
+void drawMode(int (*grid)[GRID_WIDTH]) {
+    bool drawing = true;
+    bool mouseDown = false; // Track if the mouse button is pressed down
+
+    SDL_Event e;
+
+    while (drawing) {
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                drawing = false;
+                break; // Exit drawing mode if window is closed
+            }
+            else if (e.type == SDL_MOUSEBUTTONDOWN) {
+                mouseDown = true; // Set mouseDown to true when mouse button is pressed
+                toggleCellState(e.button.x, e.button.y, grid);
+                renderGame();
+            }
+            else if (e.type == SDL_MOUSEBUTTONUP) {
+                mouseDown = false; // Reset mouseDown when mouse button is released
+            }
+            else if (e.type == SDL_MOUSEMOTION && mouseDown) {
+                // Handle dragging to draw live cells
+                toggleCellState(e.motion.x, e.motion.y, grid);
+                renderGame();
+            }
+            else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+                // Save the current drawing to a file
+                //saveCurrentDrawingToFile(grid, GRID_WIDTH, GRID_HEIGHT, "current_drawing.txt");
+                // Press Enter to exit drawing mode
+                drawing = false;
+            }
+        }
+    }
+}
+
+
+
 
 
 
@@ -285,6 +485,12 @@ int main() {
     bool running = false;
 
     SDL_Event e;
+
+    // Display the grid
+    renderGame();
+
+    // Enter drawing mode before the main loop
+    drawMode(grid);
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -327,6 +533,8 @@ int main() {
     closeSDL();
     return 0;
 }
+
+
 
 
 

@@ -8,6 +8,7 @@
 #include "config.h"  // For GRID_WIDTH and GRID_HEIGHT
 
 
+
 // Initializes a Drawing with specified dimensions
 void initDrawing(Drawing *d, int width, int height) {
     d->width = width;
@@ -43,6 +44,57 @@ void placeDrawing(const Drawing *drawing, Point topLeft, int (*mainGrid)[GRID_WI
             }
         }
     }
+}
+
+
+
+Drawing* loadDrawingFromFile(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Failed to open file %s for reading.\n", filename);
+        return NULL;
+    }
+
+    int width, height;
+    // Attempt to read the dimensions of the drawing from the file
+    if (fscanf(file, "%d %d", &width, &height) != 2) {
+        printf("Failed to read drawing dimensions from file.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Ensure the read dimensions do not exceed our maximum allowed dimensions
+    if (width > MAX_DRAWING_WIDTH || height > MAX_DRAWING_HEIGHT) {
+        printf("Drawing dimensions in file exceed maximum allowed dimensions.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate memory for the drawing
+    Drawing* drawing = (Drawing*)malloc(sizeof(Drawing));
+    if (drawing == NULL) {
+        printf("Failed to allocate memory for drawing.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Initialize the drawing with the read dimensions
+    initDrawing(drawing, width, height);
+
+    // Read the grid state from the file
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (fscanf(file, "%d", &drawing->grid[y][x]) != 1) {
+                printf("Failed to read cell state from file.\n");
+                free(drawing);
+                fclose(file);
+                return NULL;
+            }
+        }
+    }
+
+    fclose(file);
+    return drawing;
 }
 
 
