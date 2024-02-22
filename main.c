@@ -15,13 +15,16 @@ SDL_Renderer* renderer = NULL;
 
 
 // Define the size of the grid
-const int GRID_WIDTH = 200;
-const int GRID_HEIGHT = 150;
+const int GRID_WIDTH = 160;
+const int GRID_HEIGHT = 120;
+//const int GRID_WIDTH = 40;
+//const int GRID_HEIGHT = 30;
 //const int GRID_WIDTH = 160;
 //const int GRID_HEIGHT = 120;
 
 int grid[GRID_HEIGHT][GRID_WIDTH];
 int nextGrid[GRID_HEIGHT][GRID_WIDTH];
+int stepCount = 0;
 
 // Global SimulationHistory Instance
 SimulationHistory history;
@@ -42,11 +45,47 @@ void initializeGrid() {
     // Clear the grid
     memset(grid, 0, sizeof(grid));
 
+
+    Drawing* gun = loadDrawingFromFile("drawings/LWSS_gun.txt");
+    // Use the drawing...
+    placeDrawing(gun, (Point){0, 0}, grid); // Example usage
+    // When done with the drawing
+    free(gun);
+
+
+
+    //Drawing* replicator = loadDrawingFromFile("drawings/replicator.txt");
+    // Use the drawing...
+    // Place the drawing in the middle of the grid
+    //placeDrawing(replicator, (Point){GRID_WIDTH / 2 - replicator->width / 2, GRID_HEIGHT / 2 - replicator->height / 2}, grid);
+    // When done with the drawing
+    //free(replicator);
+
+    // Glider's must meet at this coord: (30, 22)
+    
     //Drawing* gun = loadDrawingFromFile("drawings/glider_gun.txt");
+    //Drawing* gun2 = loadDrawingFromFile("drawings/glider_gun.txt");
+    // Rotate the gun drawing 90 degrees clockwise
+    //rotateDrawingClockwise(gun);
+    //flipDrawingYAxis(gun);
+    //flipDrawingXAxis(gun);
+
+
+
     // Use the drawing...
     //placeDrawing(gun, (Point){0, 0}, grid); // Example usage
+    //{GRID_WIDTH / 2 - gun->width / 2, GRID_HEIGHT / 2 - gun->height / 2}
+    //placeDrawing(gun, (Point){15, 16}, grid); // Example usage
+    //placeDrawing(gun2, (Point){0, 2}, grid); // Example usage
     // When done with the drawing
     //free(gun);
+    //free(gun2);
+
+    //Drawing* slow_gun = loadDrawingFromFile("drawings/slow_gun.txt");
+    // Use the drawing...
+    //placeDrawing(slow_gun, (Point){10, 20}, grid); // Example usage
+    // When done with the drawing
+    //free(slow_gun);
 
 
     //Drawing* eater = loadDrawingFromFile("drawings/glider_eater.txt");
@@ -55,22 +94,22 @@ void initializeGrid() {
     // When done with the drawing
     //free(eater);
 
-    Drawing* gun_eater = loadDrawingFromFile("drawings/big_gun_eater.txt");
+    //Drawing* gun_eater = loadDrawingFromFile("drawings/big_gun_eater.txt");
     // Use the drawing...
-    placeDrawing(gun_eater, (Point){0, 0}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){0, 0}, grid); // Example usage
     // Use the drawing again
-    placeDrawing(gun_eater, (Point){80, 0}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){80, 0}, grid); // Example usage
     // Use the drawing again
-    placeDrawing(gun_eater, (Point){160, 0}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){160, 0}, grid); // Example usage
     // Use the drawing again
-    placeDrawing(gun_eater, (Point){0, 80}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){0, 80}, grid); // Example usage
     // Use the drawing again
-    placeDrawing(gun_eater, (Point){80, 80}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){80, 80}, grid); // Example usage
     // Use the drawing again
-    placeDrawing(gun_eater, (Point){160, 80}, grid); // Example usage
+    //placeDrawing(gun_eater, (Point){160, 80}, grid); // Example usage
     
     // When done with the drawing
-    free(gun_eater);
+    //free(gun_eater);
 
 }
 
@@ -366,6 +405,20 @@ void drawMode(int (*grid)[GRID_WIDTH]) {
 }
 
 
+// Assuming a function to clear or reset the grid to its initial state exists
+void resetSimulation() {
+    // Clear or reinitialize the grid to its initial state
+    //clearGrid(grid); // You'll need to implement this based on your grid setup
+    // Optionally, reset any other simulation state variables
+    stepCount = 0;
+    // If you have an initial setup function, call it here, or manually reset necessary components
+    // For example, reapply the initial drawing or configuration if needed
+    //drawMode(grid); // Or another function to set the initial grid state without user interaction
+    initializeGrid(); // Or another function to set the initial grid state without user interaction
+    renderGame(); // Render the reset state
+}
+
+
 /*
 int main() {
     // Initialize the game (SDL, grid, history, etc.)
@@ -451,9 +504,9 @@ int main() {
 
     // Main loop control flags
     int quit = 0;      // Flag to indicate the program should exit
-    int stepCount = 0; // Counter for the number of simulation steps executed
+    //int stepCount = 0; // Counter for the number of simulation steps executed
     bool running = false; // Flag to control the running state of the simulation
-    int simulationDelay = 100; // Delay in milliseconds
+    int simulationDelay = 10; // Delay in milliseconds
 
     SDL_Event e; // SDL event structure to handle events
 
@@ -483,11 +536,21 @@ int main() {
                     case SDLK_RIGHT:
                         if (!running) {
                             // Logic for stepping forward in simulation
+                            if(stepForwardInHistory(&history, grid) == 0) {
+                                // If no more steps forward, update and render a new state
+                                updateGame();
+                                saveStateToHistory(&history, grid);
+                                stepCount++;
+                            }
+                            renderGame(); // Render the current state regardless
+                            printf("Iteration: %d\n", stepCount);
                         }
                         break;
                     case SDLK_LEFT:
                         if (!running) {
                             // Logic for stepping backward in simulation
+                            stepBackwardInHistory(&history, grid);
+                            renderGame();
                         }
                         break;
                     case SDLK_UP:
@@ -497,6 +560,13 @@ int main() {
                     case SDLK_DOWN:
                         // Increase delay to slow down the simulation, with a maximum limit if necessary
                         simulationDelay += 10;
+                        break;
+                    case SDLK_0:
+                        // Reset the simulation to its initial state
+                        if (!running) { // It's safer to allow resetting only when the simulation is not running
+                            resetSimulation();
+                            printf("Simulation reset to initial state.\n");
+                        }
                         break;
                 }
             }

@@ -98,3 +98,40 @@ Drawing* loadDrawingFromFile(const char* filename) {
 }
 
 
+
+void rotateDrawingClockwise(Drawing *d) {
+    Drawing temp;
+    initDrawing(&temp, d->height, d->width); // Swap width and height for the rotated drawing
+
+    for (int i = 0; i < d->height; ++i) {
+        for (int j = 0; j < d->width; ++j) {
+            temp.grid[j][d->height - 1 - i] = d->grid[i][j];
+        }
+    }
+
+    // Copy the rotated drawing back to the original
+    *d = temp;
+}
+
+
+void flipDrawingXAxis(Drawing *d) {
+    for (int i = 0; i < d->height / 2; ++i) {
+        for (int j = 0; j < d->width; ++j) {
+            // Swap cells symmetrically along the x-axis
+            int temp = d->grid[i][j];
+            d->grid[i][j] = d->grid[d->height - 1 - i][j];
+            d->grid[d->height - 1 - i][j] = temp;
+        }
+    }
+}
+
+void flipDrawingYAxis(Drawing *d) {
+    for (int i = 0; i < d->height; ++i) {
+        for (int j = 0; j < d->width / 2; ++j) {
+            // Swap cells symmetrically along the y-axis
+            int temp = d->grid[i][j];
+            d->grid[i][j] = d->grid[i][d->width - 1 - j];
+            d->grid[i][d->width - 1 - j] = temp;
+        }
+    }
+}

@@ -23,6 +23,8 @@ void setCell(Drawing *d, int x, int y, int value);
 void clearDrawing(Drawing *d);
 void placeDrawing(const Drawing *drawing, Point topLeft, int (*mainGrid)[GRID_WIDTH]);
 Drawing* loadDrawingFromFile(const char* filename);
-
+void rotateDrawingClockwise(Drawing *d);
+void flipDrawingXAxis(Drawing *d);
+void flipDrawingYAxis(Drawing *d);
 
 #endif // DRAWING_H
